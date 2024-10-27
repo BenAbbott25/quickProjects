@@ -4,7 +4,7 @@ from vector import Vector
 
 pygame.init()
 
-class Game:
+class Asteroids:
     def __init__(self, screen_width, screen_height, manual=False):
         self.running = True
         self.screen_width = screen_width
@@ -23,13 +23,13 @@ class Game:
 
     def spawn_asteroids(self):
         self.asteroid_spawn_timer += self.clock.get_time()
-        print(f"Timer: {self.asteroid_spawn_timer} / {self.asteroid_spawn_interval}, Asteroids: {len(self.asteroids)} / {self.max_asteroids}, Counter: {self.max_asteroids_counter}")
+        # print(f"Timer: {self.asteroid_spawn_timer} / {self.asteroid_spawn_interval}, Asteroids: {len(self.asteroids)} / {self.max_asteroids}, Counter: {self.max_asteroids_counter}")
         if self.asteroid_spawn_timer > self.asteroid_spawn_interval and len(self.asteroids) < self.max_asteroids:
             self.asteroid_spawn_timer = 0
             self.asteroid_spawn_interval = np.random.randint(100, int(np.floor(2000 / self.max_asteroids)))
             self.asteroids.append(Asteroid(self))
 
-    def update(self, input):
+    def update(self):
         self.screen.fill((0, 0, 0))
         self.spawn_asteroids()
         for asteroid in self.asteroids:
@@ -38,13 +38,13 @@ class Game:
             if asteroid.check_off_screen():
                 self.asteroids.remove(asteroid)
                 self.max_asteroids_counter += 1
-                if self.max_asteroids_counter > (self.max_asteroids) ** 2:
+                if self.max_asteroids_counter > (self.max_asteroids):
                     self.max_asteroids += 1 if self.max_asteroids < 10 else 10
                     self.max_asteroids_counter = 0
         for bullet in self.bullets:
             bullet.update()
 
-        self.player.update(input)
+        self.player.update()
         pygame.display.flip()
 
 class Player:
@@ -118,8 +118,8 @@ class Player:
                 self.thrust_vector.magnitude -= 0.1 if self.thrust_vector.magnitude > 0 else 0
 
         else:
-            self.thrust_vector.magnitude += input[0]
-            self.thrust_vector.angle += input[1]
+            self.thrust_vector.magnitude += input[0] / 100
+            self.thrust_vector.angle += input[1] / 100
 
             if self.thrust_vector.magnitude > 1:
                 self.thrust_vector.magnitude = 1
@@ -148,11 +148,14 @@ class Player:
             # Update the thrust vector's cartesian coordinates
             self.thrust_vector.update_cartesian()
 
-        if input['space']:
-            self.shoot()
+        if self.game.manual:
+            if input['space']:
+                self.shoot()
+        else:
+            if input[2] > 0:
+                self.shoot()
 
-    def update(self, input):
-        self.handle_input(input)
+    def update(self):
         self.draw(self.game.screen)
         self.move()
         self.check_collision(self.game.asteroids)
@@ -236,7 +239,7 @@ class Asteroid:
         return False
 
 def main(manual=True):
-    game = Game(800, 800, manual)
+    game = Asteroids(800, 800, manual)
     while game.running:
         if game.manual:
             input = pygame.key.get_pressed()
@@ -247,7 +250,8 @@ def main(manual=True):
             'down': input[pygame.K_DOWN],
             'space': input[pygame.K_SPACE]
             }
-        game.update(input)
+            game.player.handle_input(input)
+        game.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.running = False

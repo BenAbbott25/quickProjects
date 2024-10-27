@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import torch
 from asteroids import Asteroids
 
 def normalize(value, min_value, max_value):
@@ -12,25 +13,26 @@ class AsteroidsEnv(gym.Env):
         self.game = None
         self.player = None
 
-        self.action_space = spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]), dtype=np.float32)
+        self.action_space = spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]), dtype=np.float32)
         low = np.zeros(109)
         high = np.ones(109)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
-        self.frames_x = 800
-        self.frames_y = 800
+        self.frames_x = 400
+        self.frames_y = 400
 
     def reset(self):
         self.game = Asteroids(self.frames_x, self.frames_y)
-        return self.game.get_observations()
+        return torch.FloatTensor(self.get_observations())
 
     def step(self, action):
-        self.game.player.handle_actions(action)
+        self.game.player.handle_input(action)
         self.game.update()
-        observations = self.game.get_observations()
-        rewards = self.game.get_reward()
-        dones = self.game.get_done()
-        infos = self.game.get_info()
-        return observations, rewards, dones, infos
+        observations = self.get_observations()
+        rewards = self.get_reward()
+        dones = self.get_done()
+        infos = self.get_info()
+        self.game.clock.tick(60)
+        return torch.FloatTensor(observations), rewards, dones, infos
 
 
     def get_observations(self):
