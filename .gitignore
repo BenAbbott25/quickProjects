@@ -2,3 +2,6 @@
 __pycache__
 tanks/.tanks/
 ants/.ants/
+.quickprojects/
+gravity/.ss_init.npz
+gravity/*.bin
